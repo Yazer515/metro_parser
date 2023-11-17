@@ -2,6 +2,7 @@ import datetime
 import requests
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
+import pandas as pd 
 
 def collect(store_code):
     time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
@@ -32,6 +33,7 @@ def strip_and_make_digits(_input_str):
 if __name__ == '__main__':
     #collect(16)
     
+    output = []
         
     time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     agent = UserAgent()
@@ -62,8 +64,7 @@ if __name__ == '__main__':
     pages_count = int(bs.find_all(class_ = 'v-pagination__item catalog-paginate__item')[-1].text)
 
     brands = brands_string.text.strip().split('\n')
-    for brand in brands:
-        
+    for brand in brands:    
         brand = brand.strip()
         if brand != '':
             brand_list.append(brand)
@@ -77,9 +78,8 @@ if __name__ == '__main__':
         products = bs.find_all(class_ = 'catalog-2-level-product-card')
         
         for element in products:
-            sold = element.find(class_ = 'product-title catalog-2-level-product-card__title style--catalog-2-level-product-card')
-            print(sold)
-            if sold == None:
+            sold_status = element.find(class_ = 'product-title catalog-2-level-product-card__title style--catalog-2-level-product-card')
+            if sold_status == None:
                 id = element.attrs['data-sku']
                 link = 'https://online.metro-cc.ru' + element.find(class_ = 'product-card-photo__link').get('href')
                 title = element.find(class_ = 'product-card-name__text').text.strip()
@@ -106,18 +106,44 @@ if __name__ == '__main__':
                         AttributeError
                         promo_price = price
                     
-                for brand in brand_list:
-                    if brand in title.upper():
-                        product_brand = brand
+                # for brand in brand_list:
+                #     if brand in title.upper():
+                
+                
+                pb = list(filter(lambda x: x in title.upper(), brand_list))
+                if pb == []:
+                        pass
+                else:
+                    product_brand = pb[0]
+
+                
+                if product_brand == None:
+                    continue
+                
+                output.append({
+                    'id' : id,
+                    'title' : title,
+                    'link' : link,
+                    'promo_price' : promo_price,
+                    'price' : price,
+                    'product_brand' : product_brand,
+                })
                         
 
 
-                print(f'ID товара: {id}')
-                print(f'Наименование: {title}')
-                print(f'Ссылка на товар: {link}')
-                print(f'Промо цена: {promo_price}')
-                print(f'Цена: {price}')
-                print(f'Бренд: {product_brand}')
-                print()
+                # print(f'ID товара: {id}')
+                # print(f'Наименование: {title}')
+                # print(f'Ссылка на товар: {link}')
+                # print(f'Промо цена: {promo_price}')
+                # print(f'Цена: {price}')
+                # print(f'Бренд: {product_brand}')
+                # print()
             else:
                 continue
+        #break
+df = pd.DataFrame.from_records(output, index = 'id')
+print(df)
+
+# Saving a Pandas DataFrame to an Excel File
+# With a Sheet Name
+df.to_excel('output.xlsx')
