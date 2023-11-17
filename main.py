@@ -23,10 +23,14 @@ def collect(store_code):
     with open('index2.html', 'w') as file:
         file.write(response.text)
 
-def strip_and_make_digits(_input_str):
-    _input_str = "".join(_input_str.split())
-    _input_str = int(''.join(filter(str.isdigit, _input_str)))
-    return _input_str
+def strip_and_make_digits(_input):
+    if _input is not None:
+        _input = _input.text
+        _input = "".join(_input.split())
+        _input = int(''.join(filter(str.isdigit, _input)))
+        return _input
+    else:
+        return None
         
     #print(len(pet_food))
 
@@ -64,10 +68,11 @@ if __name__ == '__main__':
     pages_count = int(bs.find_all(class_ = 'v-pagination__item catalog-paginate__item')[-1].text)
 
     brands = brands_string.text.strip().split('\n')
-    for brand in brands:    
+    for brand in brands:
         brand = brand.strip()
         if brand != '':
             brand_list.append(brand)
+
     #print(pages_count)
 
     for page in range(pages_count):
@@ -85,40 +90,20 @@ if __name__ == '__main__':
                 title = element.find(class_ = 'product-card-name__text').text.strip()
                 product_brand = None
                 
-                try:
-                    discount = strip_and_make_digits(element.find(class_ = 'product-discount nowrap catalog-2-level-product-card__icon-discount style--catalog-2-level-product-card').text.strip())
-                except:
-                    ArithmeticError
-                    discount = 0
-                    
-                if discount != 0:
-                    price = strip_and_make_digits(element.find(class_ = 'product-unit-prices__old-wrapper').text.strip())
-                    try:
-                        promo_price = strip_and_make_digits(element.find(class_ = 'product-price nowrap product-unit-prices__actual style--catalog-2-level-product-card-major-actual color--red').text.strip())
-                    except:
-                        AttributeError
-                        promo_price = price
+                discount = strip_and_make_digits(element.find(class_ = 'product-discount nowrap catalog-2-level-product-card__icon-discount style--catalog-2-level-product-card'))
+                   
+                if discount != None:
+                    price = strip_and_make_digits(element.find(class_ = 'product-unit-prices__old-wrapper'))
+                    promo_price = strip_and_make_digits(element.find(class_ = 'product-price nowrap product-unit-prices__actual style--catalog-2-level-product-card-major-actual color--red'))
                 else:
-                    price = strip_and_make_digits(element.find(class_ = 'product-price__sum').text.strip())
-                    try:
-                        promo_price = strip_and_make_digits(element.find(class_ = 'product-price nowrap product-unit-prices__actual style--catalog-2-level-product-card-major-actual color--red').text.strip())
-                    except:
-                        AttributeError
-                        promo_price = price
-                    
-                # for brand in brand_list:
-                #     if brand in title.upper():
-                
-                
+                    price = strip_and_make_digits(element.find(class_ = 'product-price__sum'))
+                    promo_price = price
+
                 pb = list(filter(lambda x: x in title.upper(), brand_list))
                 if pb == []:
                         pass
                 else:
                     product_brand = pb[0]
-
-                
-                if product_brand == None:
-                    continue
                 
                 output.append({
                     'id' : id,
