@@ -4,7 +4,7 @@ from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import pandas as pd 
 
-def collect(store_code):
+def parse(k, v, writer):
     time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     agent = UserAgent()
     
@@ -14,46 +14,11 @@ def collect(store_code):
     }
     
     cookies = {
-        'metroStoreId' : f'{store_code}'
+        'metroStoreId' : f'{k}'
     }
-    
-    response = requests.get(url='https://online.metro-cc.ru/category/alkogolnaya-produkciya/krepkiy-alkogol/viski', headers=headers, cookies=cookies)
-    
-    
-    with open('index2.html', 'w') as file:
-        file.write(response.text)
-
-def strip_and_make_digits(_input):
-    if _input is not None:
-        _input = _input.text
-        _input = "".join(_input.split())
-        _input = int(''.join(filter(str.isdigit, _input)))
-        return _input
-    else:
-        return None
-        
-    #print(len(pet_food))
-
-if __name__ == '__main__':
-    #collect(16)
     
     output = []
-        
-    time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
-    agent = UserAgent()
-
-    headers = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'User-Agent' : agent.random
-    }
-
-    cookies = {
-        'metroStoreId' : f'{16}'
-    }
-
-        # with open('index2.html', 'r') as file:
-        #     scr = file.read()
-       
+              
     response = requests.get(url='https://online.metro-cc.ru/category/alkogolnaya-produkciya/krepkiy-alkogol/viski', headers=headers, cookies=cookies)
     bs = BeautifulSoup(response.text, 'lxml')
 
@@ -73,11 +38,8 @@ if __name__ == '__main__':
         if brand != '':
             brand_list.append(brand)
 
-    #print(pages_count)
-
     for page in range(pages_count):
         new_url = 'https://online.metro-cc.ru/category/alkogolnaya-produkciya/krepkiy-alkogol/viski?page=' + str(int(page) + 1)
-        print(new_url)
         response = requests.get(url=new_url, headers=headers, cookies=cookies)
         bs = BeautifulSoup(response.text, 'lxml')
         products = bs.find_all(class_ = 'catalog-2-level-product-card')
@@ -104,6 +66,9 @@ if __name__ == '__main__':
                         pass
                 else:
                     product_brand = pb[0]
+                    
+                if product_brand == None:
+                    continue
                 
                 output.append({
                     'id' : id,
@@ -113,23 +78,23 @@ if __name__ == '__main__':
                     'price' : price,
                     'product_brand' : product_brand,
                 })
-                        
-
-
-                # print(f'ID товара: {id}')
-                # print(f'Наименование: {title}')
-                # print(f'Ссылка на товар: {link}')
-                # print(f'Промо цена: {promo_price}')
-                # print(f'Цена: {price}')
-                # print(f'Бренд: {product_brand}')
-                # print()
             else:
                 continue
-        #break
-df = pd.DataFrame.from_records(output, index = 'id')
-print(df)
+    df = pd.DataFrame.from_records(output, index = 'id')
+    df.to_excel(writer, sheet_name = str(v))
 
-# Saving a Pandas DataFrame to an Excel File
-# With a Sheet Name
-df.to_excel('output.xlsx')
-
+def strip_and_make_digits(_input):
+    if _input is not None:
+        _input = _input.text
+        _input = "".join(_input.split())
+        _input = int(''.join(filter(str.isdigit, _input)))
+        return _input
+    else:
+        return None
+        
+if __name__ == '__main__':
+    cities = [(356,'Москва'), (16, 'Санкт_петербург')]
+    writer = pd.ExcelWriter('output.xlsx', engine = 'xlsxwriter')
+    for k,v in cities:
+        parse(k,v, writer)
+    writer.close()
