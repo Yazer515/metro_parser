@@ -8,7 +8,7 @@
 
 ## Шаги развёртывания и запуска программы через терминал ubuntu 
 
-```
+
 1. **Установка библиотек** 
 ```
 pip install -r requirements.txt
@@ -16,3 +16,4 @@ pip install -r requirements.txt
 2. **Запуск приложения** 
 ```
 python main.py
+```
