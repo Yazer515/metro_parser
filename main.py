@@ -4,7 +4,14 @@ from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import pandas as pd 
 
-def parse(k, v, writer):
+def parse(store_id, city, writer):
+    """Функция, которая парсит категорию товара с сайта
+    
+    Args:
+        store_id (int): _Код магазина, с помощью которого определяется город. С его помощью парсится товары из нужного города_
+        city (str): _Название города, которое будет отображаться в названии листа в выходном файле_
+        writer (object): _Объект, который записывает полученные данные в .xlsx формат_
+    """
     time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     agent = UserAgent()
     
@@ -14,7 +21,7 @@ def parse(k, v, writer):
     }
     
     cookies = {
-        'metroStoreId' : f'{k}'
+        'metroStoreId' : f'{store_id}'
     }
     
     output = []
@@ -81,9 +88,17 @@ def parse(k, v, writer):
             else:
                 continue
     df = pd.DataFrame.from_records(output, index = 'id')
-    df.to_excel(writer, sheet_name = str(v))
+    df.to_excel(writer, sheet_name = str(city))
 
-def strip_and_make_digits(_input):
+def strip_and_make_digits(_input : object) -> object:
+    """Функция для преображения данных с парсера в int, если поступил не None объект
+
+    Args:
+        _input (object): _Объект, который получен в результате парсинга. Может быть как None, так и объектом bs_
+
+    Returns:
+        object: _Если полученный объект не None, то является int, иначе тоже None_
+    """
     if _input is not None:
         _input = _input.text
         _input = "".join(_input.split())
@@ -95,6 +110,6 @@ def strip_and_make_digits(_input):
 if __name__ == '__main__':
     cities = [(356,'Москва'), (16, 'Санкт_петербург')]
     writer = pd.ExcelWriter('output.xlsx', engine = 'xlsxwriter')
-    for k,v in cities:
+    for store_id, city in cities:
         parse(k,v, writer)
     writer.close()
