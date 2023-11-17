@@ -1,25 +1,33 @@
 import datetime
 import requests
+import json
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import pandas as pd 
 
-def parse(k, v, writer):
+def parse(category : str, store_id : int, city : str, writer : object):
+    """Функция, которая парсит категорию товара с сайта
+    
+    Args:
+        category (str): _Строка с необходимой категорией для парсинга_
+        store_id (int): _Код магазина, с помощью которого определяется город. С его помощью парсится товары из нужного города_
+        city (str): _Название города, которое будет отображаться в названии листа в выходном файле_
+        writer (object): _Объект, который записывает полученные данные в .xlsx формат_
+    """
     time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M')
     agent = UserAgent()
-    
     headers = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'User-Agent' : agent.random
     }
-    
+
     cookies = {
-        'metroStoreId' : f'{k}'
+        'metroStoreId' : f'{store_id}'
     }
     
     output = []
-              
-    response = requests.get(url='https://online.metro-cc.ru/category/alkogolnaya-produkciya/krepkiy-alkogol/viski', headers=headers, cookies=cookies)
+    
+    response = requests.get(url=f'https://online.metro-cc.ru{category}', headers=headers, cookies=cookies)
     bs = BeautifulSoup(response.text, 'lxml')
 
     adress = bs.find(class_ = 'header-address__receive-address').text.strip()
@@ -39,7 +47,7 @@ def parse(k, v, writer):
             brand_list.append(brand)
 
     for page in range(pages_count):
-        new_url = 'https://online.metro-cc.ru/category/alkogolnaya-produkciya/krepkiy-alkogol/viski?page=' + str(int(page) + 1)
+        new_url = f'https://online.metro-cc.ru{category}?page={str(int(page) + 1)}'
         response = requests.get(url=new_url, headers=headers, cookies=cookies)
         bs = BeautifulSoup(response.text, 'lxml')
         products = bs.find_all(class_ = 'catalog-2-level-product-card')
@@ -81,9 +89,17 @@ def parse(k, v, writer):
             else:
                 continue
     df = pd.DataFrame.from_records(output, index = 'id')
-    df.to_excel(writer, sheet_name = str(v))
+    df.to_excel(writer, sheet_name = str(city))
 
-def strip_and_make_digits(_input):
+def strip_and_make_digits(_input : object) -> object:
+    """Функция для преображения данных с парсера в int, если поступил не None объект
+
+    Args:
+        _input (object): _Объект, который получен в результате парсинга. Может быть как None, так и объектом bs_
+
+    Returns:
+        object: _Если полученный объект не None, то является int, иначе тоже None_
+    """
     if _input is not None:
         _input = _input.text
         _input = "".join(_input.split())
@@ -93,8 +109,11 @@ def strip_and_make_digits(_input):
         return None
         
 if __name__ == '__main__':
-    cities = [(356,'Москва'), (16, 'Санкт_петербург')]
-    writer = pd.ExcelWriter('output.xlsx', engine = 'xlsxwriter')
-    for k,v in cities:
-        parse(k,v, writer)
+    json_file = open('config/config.json')
+    data = json.load(json_file)
+    cities = data['cities']
+    category = data['category']
+    writer = pd.ExcelWriter('output/output.xlsx', engine = 'xlsxwriter')
+    for city_data in cities:
+        parse(category, city_data['store_id'], city_data['city'], writer)
     writer.close()
