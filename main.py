@@ -56,7 +56,9 @@ def parse(category : str, store_id : int, city : str, writer : object):
             sold_status = element.find(class_ = 'product-title catalog-2-level-product-card__title style--catalog-2-level-product-card')
             if sold_status == None:
                 id = element.attrs['data-sku']
-                link = 'https://online.metro-cc.ru' + element.find(class_ = 'product-card-photo__link')а
+                link = 'https://online.metro-cc.ru' + element.find(class_ = 'product-card-photo__link').get('href')
+                title = element.find(class_ = 'product-card-name__text').text.strip()
+                product_brand = None
                 
                 discount = strip_and_make_digits(element.find(class_ = 'product-discount nowrap catalog-2-level-product-card__icon-discount style--catalog-2-level-product-card'))
                    
